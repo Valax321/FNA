@@ -88,7 +88,8 @@ namespace Microsoft.Xna.Framework.Media
 
 		#region Constructors, Destructor, Dispose()
 
-		internal Song(string fileName, string name = null)
+		// ORBHALL: make this constructor public so that we can load these files from our custom asset workflow
+		public Song(string fileName, string name = null)
 		{
 			if (!File.Exists(fileName))
 			{

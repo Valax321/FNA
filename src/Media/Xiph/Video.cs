@@ -82,7 +82,8 @@ namespace Microsoft.Xna.Framework.Media
 
 		#region Internal Constructors
 
-		internal Video(string fileName, GraphicsDevice device)
+		// ORBHALL: changed constructor visibility to public so we can load video files with our custom asset workflow
+		public Video(string fileName, GraphicsDevice device)
 		{
 			GraphicsDevice = device;
 

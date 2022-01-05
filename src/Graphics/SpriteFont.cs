@@ -92,7 +92,8 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		#region Internal Constructor
 
-		internal SpriteFont(
+		// ORBHALL: made this public so that we can create it from our loader
+		public SpriteFont(
 			Texture2D texture,
 			List<Rectangle> glyphBounds,
 			List<Rectangle> cropping,
