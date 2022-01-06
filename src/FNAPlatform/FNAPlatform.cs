@@ -162,7 +162,7 @@ namespace Microsoft.Xna.Framework
 			(char) 127,	// Delete
 			(char) 22	// Ctrl+V (Paste)
 		};
-		public static readonly Dictionary<Keys, int> TextInputBindings = new Dictionary<Keys, int>()
+		public static readonly Dictionary<Keys, int> TextInputBindings = new Dictionary<Keys, int>(comparer: EnumComparer<Keys>.Default)
 		{
 			{ Keys.Home,	0 },
 			{ Keys.End,	1 },
@@ -359,6 +359,30 @@ namespace Microsoft.Xna.Framework
 
 		public delegate void RunPlatformMainLoopFunc(Game game);
 		public static readonly RunPlatformMainLoopFunc RunPlatformMainLoop;
+
+		#endregion
+
+		#region Custom comparer for TextInputBindings
+
+		public sealed class EnumComparer<T> : IEqualityComparer<T> where T : struct, Enum
+		{
+			public static EnumComparer<T> Default { get; } = new EnumComparer<T>();
+
+			private EnumComparer()
+			{
+			}
+
+			public bool Equals(T a, T b)
+			{
+				var asEnumType = a as T?;
+				return asEnumType != null && EqualityComparer<T>.Default.Equals(asEnumType.Value, b);
+			}
+
+			public int GetHashCode(T value)
+			{
+				return value.GetHashCode();
+			}
+		}
 
 		#endregion
 	}
