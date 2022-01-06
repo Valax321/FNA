@@ -642,7 +642,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		public void DrawString(
 			SpriteFont spriteFont,
-			StringBuilder text,
+			ref ArraySegment<char> text,
 			Vector2 position,
 			Color color
 		) {
@@ -652,7 +652,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 			DrawString(
 				spriteFont,
-				text,
+				ref text,
 				position,
 				color,
 				0.0f,
@@ -665,7 +665,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		public void DrawString(
 			SpriteFont spriteFont,
-			StringBuilder text,
+			ref ArraySegment<char> text,
 			Vector2 position,
 			Color color,
 			float rotation,
@@ -680,7 +680,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 			DrawString(
 				spriteFont,
-				text,
+				ref text,
 				position,
 				color,
 				rotation,
@@ -693,7 +693,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		public void DrawString(
 			SpriteFont spriteFont,
-			StringBuilder text,
+			ref ArraySegment<char> text,
 			Vector2 position,
 			Color color,
 			float rotation,
@@ -712,7 +712,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			{
 				throw new ArgumentNullException("text");
 			}
-			if (text.Length == 0)
+			if (text.Count == 0)
 			{
 				return;
 			}
@@ -748,7 +748,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
 			Vector2 curOffset = Vector2.Zero;
 			bool firstInLine = true;
-			for (int i = 0; i < text.Length; i += 1)
+			for (int i = 0; i < text.Count; i += 1)
 			{
 				char c = text[i];
 

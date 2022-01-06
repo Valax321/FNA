@@ -218,7 +218,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			return result;
 		}
 
-		public Vector2 MeasureString(StringBuilder text)
+		public Vector2 MeasureString(ArraySegment<char> text)
 		{
 			/* FIXME: This method is a duplicate of MeasureString(string)!
 			 * The only difference is how we iterate through the StringBuilder.
@@ -229,7 +229,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			{
 				throw new ArgumentNullException("text");
 			}
-			if (text.Length == 0)
+			if (text.Count == 0)
 			{
 				return Vector2.Zero;
 			}
@@ -241,7 +241,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			float finalLineHeight = LineSpacing;
 			bool firstInLine = true;
 
-			for (int i = 0; i < text.Length; i += 1)
+			for (int i = 0; i < text.Count; i += 1)
 			{
 				char c = text[i];
 
