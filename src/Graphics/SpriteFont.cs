@@ -243,7 +243,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
 			for (int i = 0; i < text.Count; i += 1)
 			{
-				char c = text[i];
+				char c = text.Array[text.Offset + i];
 
 				// Special characters
 				if (c == '\r')
