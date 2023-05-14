@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2022 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2023 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -66,6 +66,42 @@ namespace Microsoft.Xna.Framework.Graphics
 		#endregion
 
 		#region Static SurfaceFormat Size Methods
+
+		protected static int GetBlockSizeSquared(SurfaceFormat format)
+		{
+			switch (format)
+			{
+				case SurfaceFormat.Dxt1:
+				case SurfaceFormat.Dxt3:
+				case SurfaceFormat.Dxt5:
+				case SurfaceFormat.Dxt5SrgbEXT:
+				case SurfaceFormat.Bc7EXT:
+				case SurfaceFormat.Bc7SrgbEXT:
+					return 16;
+				case SurfaceFormat.Alpha8:
+				case SurfaceFormat.Bgr565:
+				case SurfaceFormat.Bgra4444:
+				case SurfaceFormat.Bgra5551:
+				case SurfaceFormat.HalfSingle:
+				case SurfaceFormat.NormalizedByte2:
+				case SurfaceFormat.Color:
+				case SurfaceFormat.Single:
+				case SurfaceFormat.Rg32:
+				case SurfaceFormat.HalfVector2:
+				case SurfaceFormat.NormalizedByte4:
+				case SurfaceFormat.Rgba1010102:
+				case SurfaceFormat.ColorBgraEXT:
+				case SurfaceFormat.ColorSrgbEXT:
+				case SurfaceFormat.HalfVector4:
+				case SurfaceFormat.Rgba64:
+				case SurfaceFormat.Vector2:
+				case SurfaceFormat.HdrBlendable:
+				case SurfaceFormat.Vector4:
+					return 1;
+				default:
+					throw new ArgumentException("Should be a value defined in SurfaceFormat", "Format");
+			}
+		}
 
 		internal static int GetFormatSize(SurfaceFormat format)
 		{
@@ -203,14 +239,15 @@ namespace Microsoft.Xna.Framework.Graphics
 			const uint DDS_MAGIC = 0x20534444;
 			const uint DDS_HEADERSIZE = 124;
 			const uint DDS_PIXFMTSIZE = 32;
-			const uint DDSD_CAPS = 0x1;
 			const uint DDSD_HEIGHT = 0x2;
 			const uint DDSD_WIDTH = 0x4;
 			const uint DDSD_PITCH = 0x8;
-			const uint DDSD_FMT = 0x1000;
 			const uint DDSD_LINEARSIZE = 0x80000;
 			const uint DDSD_REQ = (
-				DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_FMT
+				/* Per the spec, this should also be or'd with DDSD_CAPS | DDSD_FMT,
+				 * but some compression tools don't obey the spec, so here we are...
+				 */
+				DDSD_HEIGHT | DDSD_WIDTH
 			);
 			const uint DDSCAPS_MIPMAP = 0x400000;
 			const uint DDSCAPS_TEXTURE = 0x1000;

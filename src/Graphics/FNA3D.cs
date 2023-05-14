@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2022 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2023 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -15,6 +15,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Xna.Framework.Graphics
 {
+	[System.Security.SuppressUnmanagedCodeSecurity]
 	internal static class FNA3D
 	{
 		#region Private Constants
@@ -834,7 +835,7 @@ namespace Microsoft.Xna.Framework.Graphics
 		) {
 			byte* utf8Text = SDL2.SDL.Utf8EncodeHeap(text);
 			FNA3D_SetStringMarker(device, utf8Text);
-			Marshal.FreeHGlobal((IntPtr) utf8Text);
+			FNAPlatform.Free((IntPtr) utf8Text);
 		}
 
 		#endregion

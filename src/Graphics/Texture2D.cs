@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2022 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2023 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -163,6 +163,14 @@ namespace Microsoft.Xna.Framework.Graphics
 			{
 				throw new ArgumentNullException("data");
 			}
+			if (startIndex < 0)
+			{
+				throw new ArgumentOutOfRangeException("startIndex");
+			}
+			if (data.Length < (elementCount + startIndex))
+			{
+				throw new ArgumentOutOfRangeException("elementCount");
+			}
 
 			int x, y, w, h;
 			if (rect.HasValue)
@@ -179,7 +187,14 @@ namespace Microsoft.Xna.Framework.Graphics
 				w = Math.Max(Width >> level, 1);
 				h = Math.Max(Height >> level, 1);
 			}
-			int elementSize = Marshal.SizeOf(typeof(T));
+			int elementSize = MarshalHelper.SizeOf<T>();
+			int requiredBytes = (w * h * GetFormatSize(Format)) / GetBlockSizeSquared(Format);
+			int availableBytes = elementCount * elementSize;
+			if (requiredBytes > availableBytes)
+			{
+				throw new ArgumentOutOfRangeException("rect", "The region you are trying to upload is larger than the amount of data you provided.");
+			}
+
 			GCHandle handle = GCHandle.Alloc(data, GCHandleType.Pinned);
 			FNA3D.FNA3D_SetTextureData2D(
 				GraphicsDevice.GLDevice,
@@ -299,7 +314,7 @@ namespace Microsoft.Xna.Framework.Graphics
 				subH = rect.Value.Height;
 			}
 
-			int elementSizeInBytes = Marshal.SizeOf(typeof(T));
+			int elementSizeInBytes = MarshalHelper.SizeOf<T>();
 			ValidateGetDataFormat(Format, elementSizeInBytes);
 
 			GCHandle handle = GCHandle.Alloc(data, GCHandleType.Pinned);
@@ -323,15 +338,22 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		public void SaveAsJpeg(Stream stream, int width, int height)
 		{
+			int quality;
+			string qualityString = Environment.GetEnvironmentVariable("FNA_GRAPHICS_JPEG_SAVE_QUALITY");
+			if (string.IsNullOrEmpty(qualityString) || !int.TryParse(qualityString, out quality))
+			{
+				quality = 100; // FIXME: What does XNA pick for quality? -flibit
+			}
+
 			int len = Width * Height * GetFormatSize(Format);
-			IntPtr data = Marshal.AllocHGlobal(len);
+			IntPtr data = FNAPlatform.Malloc(len);
 			FNA3D.FNA3D_GetTextureData2D(
 				GraphicsDevice.GLDevice,
 				texture,
 				0,
 				0,
 				Width,
-				height,
+				Height,
 				0,
 				data,
 				len
@@ -344,23 +366,23 @@ namespace Microsoft.Xna.Framework.Graphics
 				width,
 				height,
 				data,
-				100 // FIXME: What does XNA pick for quality? -flibit
+				quality
 			);
 
-			Marshal.FreeHGlobal(data);
+			FNAPlatform.Free(data);
 		}
 
 		public void SaveAsPng(Stream stream, int width, int height)
 		{
 			int len = Width * Height * GetFormatSize(Format);
-			IntPtr data = Marshal.AllocHGlobal(len);
+			IntPtr data = FNAPlatform.Malloc(len);
 			FNA3D.FNA3D_GetTextureData2D(
 				GraphicsDevice.GLDevice,
 				texture,
 				0,
 				0,
 				Width,
-				height,
+				Height,
 				0,
 				data,
 				len
@@ -376,7 +398,7 @@ namespace Microsoft.Xna.Framework.Graphics
 				data
 			);
 
-			Marshal.FreeHGlobal(data);
+			FNAPlatform.Free(data);
 		}
 
 		#endregion

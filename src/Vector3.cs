@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2022 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2023 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -329,6 +329,21 @@ namespace Microsoft.Xna.Framework
 			sb.Append(this.Z);
 			sb.Append("}");
 			return sb.ToString();
+		}
+
+		#endregion
+
+		#region Internal Methods
+
+		[Conditional("DEBUG")]
+		internal void CheckForNaNs()
+		{
+			if (	float.IsNaN(X) ||
+				float.IsNaN(Y) ||
+				float.IsNaN(Z)	)
+			{
+				throw new InvalidOperationException("Vector3 contains NaNs!");
+			}
 		}
 
 		#endregion

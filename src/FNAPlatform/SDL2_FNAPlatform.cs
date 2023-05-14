@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2022 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2023 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -208,11 +208,28 @@ namespace Microsoft.Xna.Framework
 				);
 			}
 
+			/* FIXME: SDL bug!
+			 * Well, really it's a Windows bug - for some reason the
+			 * Windows audio team has lost it and now you can't just
+			 * pick between directsound/wasapi, we have to go back
+			 * and forth constantly, so for convenience we're adding
+			 * this check. This shouldn't be necessary anywhere else
+			 * as far as I know, treat it like an OS bug otherwise!
+			 * -flibit
+			 */
+			if (args.TryGetValue("audiodriver", out arg))
+			{
+				Environment.SetEnvironmentVariable("SDL_AUDIODRIVER", arg);
+			}
+
 			// This _should_ be the first real SDL call we make...
-			SDL.SDL_Init(
+			if (SDL.SDL_Init(
 				SDL.SDL_INIT_VIDEO |
 				SDL.SDL_INIT_GAMECONTROLLER
-			);
+			) != 0)
+			{
+				throw new Exception("SDL_Init failed: " + SDL.SDL_GetError());
+			}
 
 			string videoDriver = SDL.SDL_GetCurrentVideoDriver();
 
@@ -288,6 +305,54 @@ namespace Microsoft.Xna.Framework
 				INTERNAL_AddInstance(evt[0].cdevice.which);
 			}
 
+			/* Minimal, Portable, SDL-based Tesla Splash.
+			 * Copyright (c) 2022-2023 Ethan Lee
+			 * Released under the zlib license:
+			 * https://www.zlib.net/zlib_license.html
+			 *
+			 * FIXME: SteamTesla is a guess based on SteamTenfoot/SteamDeck!
+			 *
+			 * Image: https://flibitijibibo.com/tesla.bmp
+			 * As you can see, this only works if the image is in
+			 * the title root, so this isn't being forced on anyone.
+			 *
+			 * Elon: I'll delete this code for $10M USD after taxes!
+			 * Love, flibit
+			 */
+			if (SDL.SDL_GetHint("SteamTesla") == "1")
+			{
+				IntPtr bmp = SDL.SDL_LoadBMP("tesla.bmp");
+				if (bmp != IntPtr.Zero)
+				{
+					int width, height;
+					unsafe
+					{
+						SDL.SDL_Surface *surface = (SDL.SDL_Surface*) bmp;
+						width = surface->w;
+						height = surface->h;
+					}
+					IntPtr window = SDL.SDL_CreateWindow(null, 0, 0, width, height, 0);
+					if (window != IntPtr.Zero)
+					{
+						ulong target = SDL.SDL_GetTicks64() + 2000;
+						do
+						{
+							/* Note that we're not polling events here, we would prefer
+							 * that these events go to the actual game instead!
+							 *
+							 * Also note that we're getting/blitting each frame, since
+							 * certain OS events can invalidate it (usually resizes?).
+							 */
+							IntPtr windowSurface = SDL.SDL_GetWindowSurface(window);
+							SDL.SDL_BlitSurface(bmp, IntPtr.Zero, windowSurface, IntPtr.Zero);
+							SDL.SDL_UpdateWindowSurface(window);
+						} while ((long) (SDL.SDL_GetTicks64() - target) <= 0);
+						SDL.SDL_DestroyWindow(window);
+					}
+					SDL.SDL_FreeSurface(bmp);
+				}
+			}
+
 			return titleLocation;
 		}
 
@@ -303,6 +368,15 @@ namespace Microsoft.Xna.Framework
 
 			// This _should_ be the last SDL call we make...
 			SDL.SDL_Quit();
+		}
+
+		#endregion
+
+		#region Allocator
+
+		public static IntPtr Malloc(int size)
+		{
+			return SDL.SDL_malloc((IntPtr) size);
 		}
 
 		#endregion
@@ -572,13 +646,7 @@ namespace Microsoft.Xna.Framework
 			Rectangle result;
 			if ((SDL.SDL_GetWindowFlags(window) & (uint) SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) != 0)
 			{
-				/* FIXME: SDL2 bug!
-				 * SDL's a little weird about SDL_GetWindowSize.
-				 * If you call it early enough (for example,
-				 * Game.Initialize()), it reports outdated ints.
-				 * So you know what, let's just use this.
-				 * -flibit
-				 */
+				/* It's easier/safer to just use the display mode here */
 				SDL.SDL_DisplayMode mode;
 				SDL.SDL_GetCurrentDisplayMode(
 					SDL.SDL_GetWindowDisplayIndex(
@@ -643,6 +711,11 @@ namespace Microsoft.Xna.Framework
 				window,
 				title
 			);
+		}
+
+		public static bool IsScreenKeyboardShown(IntPtr window)
+		{
+			return SDL.SDL_IsScreenKeyboardShown(window) == SDL.SDL_bool.SDL_TRUE;
 		}
 
 		private static void INTERNAL_SetIcon(IntPtr window, string title)
@@ -788,6 +861,7 @@ namespace Microsoft.Xna.Framework
 		private static void INTERNAL_HandleOrientationChange(
 			DisplayOrientation orientation,
 			GraphicsDevice graphicsDevice,
+			GraphicsAdapter graphicsAdapter,
 			FNAWindow window
 		) {
 			// Flip the backbuffer dimensions if needed
@@ -811,7 +885,10 @@ namespace Microsoft.Xna.Framework
 			graphicsDevice.PresentationParameters.DisplayOrientation = orientation;
 			window.CurrentOrientation = orientation;
 
-			graphicsDevice.Reset();
+			graphicsDevice.Reset(
+				graphicsDevice.PresentationParameters,
+				graphicsAdapter
+			);
 			window.INTERNAL_OnOrientationChanged();
 		}
 
@@ -847,7 +924,6 @@ namespace Microsoft.Xna.Framework
 			Game game,
 			ref GraphicsAdapter currentAdapter,
 			bool[] textInputControlDown,
-			int[] textInputControlRepeat,
 			ref bool textInputSuppress
 		) {
 			SDL.SDL_Event evt;
@@ -865,15 +941,27 @@ namespace Microsoft.Xna.Framework
 						if (FNAPlatform.TextInputBindings.TryGetValue(key, out textIndex))
 						{
 							textInputControlDown[textIndex] = true;
-							textInputControlRepeat[textIndex] = Environment.TickCount + 400;
 							TextInputEXT.OnTextInput(FNAPlatform.TextInputCharacters[textIndex]);
 						}
-						else if (Keyboard.keys.Contains(Keys.LeftControl) && key == Keys.V)
+						else if ((Keyboard.keys.Contains(Keys.LeftControl) || Keyboard.keys.Contains(Keys.RightControl))
+							&& key == Keys.V)
 						{
 							textInputControlDown[6] = true;
-							textInputControlRepeat[6] = Environment.TickCount + 400;
 							TextInputEXT.OnTextInput(FNAPlatform.TextInputCharacters[6]);
 							textInputSuppress = true;
+						}
+					}
+					else if (evt.key.repeat > 0)
+					{
+						int textIndex;
+						if (FNAPlatform.TextInputBindings.TryGetValue(key, out textIndex))
+						{
+							TextInputEXT.OnTextInput(FNAPlatform.TextInputCharacters[textIndex]);
+						}
+						else if ((Keyboard.keys.Contains(Keys.LeftControl) || Keyboard.keys.Contains(Keys.RightControl))
+							&& key == Keys.V)
+						{
+							TextInputEXT.OnTextInput(FNAPlatform.TextInputCharacters[6]);
 						}
 					}
 				}
@@ -887,7 +975,8 @@ namespace Microsoft.Xna.Framework
 						{
 							textInputControlDown[value] = false;
 						}
-						else if ((!Keyboard.keys.Contains(Keys.LeftControl) && textInputControlDown[6]) || key == Keys.V)
+						else if (((!Keyboard.keys.Contains(Keys.LeftControl) && !Keyboard.keys.Contains(Keys.RightControl)) && textInputControlDown[6])
+							|| key == Keys.V)
 						{
 							textInputControlDown[6] = false;
 							textInputSuppress = false;
@@ -995,7 +1084,7 @@ namespace Microsoft.Xna.Framework
 						 */
 						uint flags = SDL.SDL_GetWindowFlags(game.Window.Handle);
 						if (	(flags & (uint) SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE) != 0 &&
-							(flags & (uint) SDL.SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS) != 0	)
+							(flags & (uint) (SDL.SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS | SDL.SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS)) != 0	)
 						{
 							((FNAWindow) game.Window).INTERNAL_ClientSizeChanged();
 						}
@@ -1057,7 +1146,16 @@ namespace Microsoft.Xna.Framework
 						INTERNAL_HandleOrientationChange(
 							orientation,
 							game.GraphicsDevice,
+							currentAdapter,
 							(FNAWindow) game.Window
+						);
+					}
+					else
+					{
+						// Just reset, this is probably a hotplug
+						game.GraphicsDevice.Reset(
+							game.GraphicsDevice.PresentationParameters,
+							currentAdapter
 						);
 					}
 				}
@@ -1122,14 +1220,6 @@ namespace Microsoft.Xna.Framework
 				{
 					game.RunApplication = false;
 					break;
-				}
-			}
-			// Text Input Controls Key Handling
-			for (int i = 0; i < FNAPlatform.TextInputCharacters.Length; i += 1)
-			{
-				if (textInputControlDown[i] && textInputControlRepeat[i] <= Environment.TickCount)
-				{
-					TextInputEXT.OnTextInput(FNAPlatform.TextInputCharacters[i]);
 				}
 			}
 		}
@@ -2254,6 +2344,14 @@ namespace Microsoft.Xna.Framework
 			return SDL.SDL_GetNumTouchFingers(
 				SDL.SDL_GetTouchDevice(0)
 			);
+		}
+
+		#endregion
+
+		#region TextInput Methods
+		public static bool IsTextInputActive()
+		{
+			return SDL.SDL_IsTextInputActive() != 0;
 		}
 
 		#endregion
