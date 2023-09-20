@@ -92,20 +92,6 @@ namespace Microsoft.Xna.Framework
 						"1"
 					);
 				}
-
-				/* Windows has terrible event pumping and doesn't give us
-				 * WM_PAINT events correctly. So we get to do this!
-				 * -flibit
-				 */
-				IntPtr prevUserData;
-				SDL.SDL_GetEventFilter(
-					out prevEventFilter,
-					out prevUserData
-				);
-				SDL.SDL_SetEventFilter(
-					win32OnPaint,
-					prevUserData
-				);
 			}
 
 			/* Mount TitleLocation.Path */
@@ -303,6 +289,24 @@ namespace Microsoft.Xna.Framework
 				SDL.SDL_EventType.SDL_CONTROLLERDEVICEADDED
 			) == 1) {
 				INTERNAL_AddInstance(evt[0].cdevice.which);
+			}
+
+			if (	OSVersion.Equals("Windows") ||
+				OSVersion.Equals("WinRT")	)
+			{
+				/* Windows has terrible event pumping and doesn't give us
+				 * WM_PAINT events correctly. So we get to do this!
+				 * -flibit
+				 */
+				IntPtr prevUserData;
+				SDL.SDL_GetEventFilter(
+					out prevEventFilter,
+					out prevUserData
+				);
+				SDL.SDL_SetEventFilter(
+					win32OnPaint,
+					prevUserData
+				);
 			}
 
 			/* Minimal, Portable, SDL-based Tesla Splash.
@@ -1400,6 +1404,12 @@ namespace Microsoft.Xna.Framework
 					SDL.SDL_bool.SDL_TRUE :
 					SDL.SDL_bool.SDL_FALSE
 			);
+			if (enable)
+			{
+			    // Flush this value, it's going to be jittery
+			    int filler;
+			    SDL.SDL_GetRelativeMouseState(out filler, out filler);
+			}
 		}
 
 		#endregion
