@@ -10,10 +10,11 @@
 #region Using Statements
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 #endregion
 
 namespace Microsoft.Xna.Framework.Graphics
-{	
+{
 	public abstract class GraphicsResource : IDisposable
 	{
 		#region Public Properties
@@ -39,12 +40,12 @@ namespace Microsoft.Xna.Framework.Graphics
 				if (graphicsDevice != null && selfReference != null)
 				{
 					graphicsDevice.RemoveResourceReference(selfReference);
-					selfReference = null;
+					selfReference.Free();
 				}
 
 				graphicsDevice = value;
 
-				selfReference = new WeakReference(this);
+				selfReference = GCHandle.Alloc(this, GCHandleType.Weak);
 				graphicsDevice.AddResourceReference(selfReference);
 			}
 		}
@@ -55,10 +56,18 @@ namespace Microsoft.Xna.Framework.Graphics
 			private set;
 		}
 
-		public string Name
+		protected string _Name;
+
+		public virtual string Name
 		{
-			get;
-			set;
+			get
+			{
+				return _Name;
+			}
+			set
+			{
+				_Name = value;
+			}
 		}
 
 		public Object Tag
@@ -71,7 +80,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		#region Private Variables
 
-		private WeakReference selfReference;
+		private GCHandle selfReference;
 
 		private GraphicsDevice graphicsDevice;
 
@@ -107,7 +116,14 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 #endif
 
-			// FIXME: We really should call Dispose() here! -flibit
+			// While we only log in debug builds, in both debug and release builds we want to free
+			// any native resources associated with this object at the earliest opportunity.
+			// This will at least prevent you from running out of memory rapidly.
+			GraphicsResourceDisposalHandle[] handles = CreateDisposalHandles();
+			if (handles != null)
+			{
+				graphicsDevice.RegisterForEmergencyDisposal(handles);
+			}
 		}
 
 		#endregion
@@ -154,6 +170,13 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 		}
 
+		// This has to return an array because some resources have multiple handles...
+		internal virtual GraphicsResourceDisposalHandle[] CreateDisposalHandles()
+		{
+			// ... But only certain GraphicsResource types have pointers to dispose!
+			return null;
+		}
+
 		#endregion
 
 		#region Protected Dispose Method
@@ -181,7 +204,7 @@ namespace Microsoft.Xna.Framework.Graphics
 				if (graphicsDevice != null && selfReference != null)
 				{
 					graphicsDevice.RemoveResourceReference(selfReference);
-					selfReference = null;
+					selfReference.Free();
 				}
 
 				IsDisposed = true;

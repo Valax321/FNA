@@ -30,6 +30,33 @@ namespace Microsoft.Xna.Framework.Graphics
 			protected set;
 		}
 
+		public override string Name
+		{
+			get
+			{
+				return base.Name;
+			}
+			set
+			{
+				// Avoid calling SetTextureName when the value hasn't changed.
+				if (value == base.Name)
+				{
+					return;
+				}
+
+				base.Name = value;
+
+				// Never pass a null string pointer through to SetTextureName.
+				// Since base.Name will be null by default, this will only happen if
+				//  you first set a name for the texture, then try to null it out.
+				if (value == null)
+				{
+					value = string.Empty;
+				}
+				FNA3D.FNA3D_SetTextureName(GraphicsDevice.GLDevice, texture, value);
+			}
+		}
+
 		#endregion
 
 		#region Internal FNA3D Variables
@@ -67,7 +94,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		#region Static SurfaceFormat Size Methods
 
-		protected static int GetBlockSizeSquared(SurfaceFormat format)
+		public static int GetBlockSizeSquaredEXT(SurfaceFormat format)
 		{
 			switch (format)
 			{
@@ -103,7 +130,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 		}
 
-		internal static int GetFormatSize(SurfaceFormat format)
+		public static int GetFormatSizeEXT(SurfaceFormat format)
 		{
 			switch (format)
 			{
@@ -151,14 +178,14 @@ namespace Microsoft.Xna.Framework.Graphics
 			 * https://www.khronos.org/registry/OpenGL/specs/gl/glspec21.pdf
 			 * OpenGL 2.1 Specification, section 3.6.1, table 3.1 specifies that the pixelstorei alignment cannot exceed 8
 			 */
-			return Math.Min(8, GetFormatSize(format));
+			return Math.Min(8, GetFormatSizeEXT(format));
 		}
 
 		internal static void ValidateGetDataFormat(
 			SurfaceFormat format,
 			int elementSizeInBytes
 		) {
-			if (GetFormatSize(format) % elementSizeInBytes != 0)
+			if (GetFormatSizeEXT(format) % elementSizeInBytes != 0)
 			{
 				throw new ArgumentException(
 					"The type you are using for T in this" +
@@ -464,6 +491,22 @@ namespace Microsoft.Xna.Framework.Graphics
 					"Unsupported DDS texture format"
 				);
 			}
+		}
+
+		#endregion
+
+		#region Emergency Disposal
+
+		internal override GraphicsResourceDisposalHandle[] CreateDisposalHandles()
+		{
+			return new GraphicsResourceDisposalHandle[]
+			{
+				new GraphicsResourceDisposalHandle
+				{
+					disposeAction = FNA3D.FNA3D_AddDisposeTexture,
+					resourceHandle = texture
+				}
+			};
 		}
 
 		#endregion

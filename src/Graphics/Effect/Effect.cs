@@ -73,7 +73,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 		}
 
-		private IntPtr stateChangesPtr;
+		private IntPtr effectData;
 
 		#endregion
 
@@ -227,24 +227,13 @@ namespace Microsoft.Xna.Framework.Graphics
 				out effectData
 			);
 
+			this.effectData = effectData;
+
 			// This is where it gets ugly...
 			INTERNAL_parseEffectStruct(effectData);
 
 			// The default technique is the first technique.
 			CurrentTechnique = Techniques[0];
-
-			// Use native memory for changes, .NET loves moving this around
-			unsafe
-			{
-				stateChangesPtr = FNAPlatform.Malloc(
-					sizeof(MOJOSHADER_effectStateChanges)
-				);
-				MOJOSHADER_effectStateChanges *stateChanges =
-					(MOJOSHADER_effectStateChanges*) stateChangesPtr;
-				stateChanges->render_state_change_count = 0;
-				stateChanges->sampler_state_change_count = 0;
-				stateChanges->vertex_sampler_state_change_count = 0;
-			}
 		}
 
 		#endregion
@@ -264,6 +253,8 @@ namespace Microsoft.Xna.Framework.Graphics
 				out effectData
 			);
 
+			this.effectData = effectData;
+
 			// Double the ugly, double the fun!
 			INTERNAL_parseEffectStruct(effectData);
 
@@ -281,19 +272,6 @@ namespace Microsoft.Xna.Framework.Graphics
 					CurrentTechnique = Techniques[i];
 				}
 			}
-
-			// Use native memory for changes, .NET loves moving this around
-			unsafe
-			{
-				stateChangesPtr = FNAPlatform.Malloc(
-					sizeof(MOJOSHADER_effectStateChanges)
-				);
-				MOJOSHADER_effectStateChanges *stateChanges =
-					(MOJOSHADER_effectStateChanges*) stateChangesPtr;
-				stateChanges->render_state_change_count = 0;
-				stateChanges->sampler_state_change_count = 0;
-				stateChanges->vertex_sampler_state_change_count = 0;
-			}
 		}
 
 		#endregion
@@ -303,6 +281,22 @@ namespace Microsoft.Xna.Framework.Graphics
 		public virtual Effect Clone()
 		{
 			return new Effect(this);
+		}
+
+		#endregion
+
+		#region Emergency Disposal
+
+		internal override GraphicsResourceDisposalHandle[] CreateDisposalHandles()
+		{
+			return new GraphicsResourceDisposalHandle[]
+			{
+				new GraphicsResourceDisposalHandle
+				{
+					disposeAction = FNA3D.FNA3D_AddDisposeEffect,
+					resourceHandle = glEffect
+				}
+			};
 		}
 
 		#endregion
@@ -319,11 +313,6 @@ namespace Microsoft.Xna.Framework.Graphics
 						GraphicsDevice.GLDevice,
 						glEffect
 					);
-				}
-				if (stateChangesPtr != IntPtr.Zero)
-				{
-					FNAPlatform.Free(stateChangesPtr);
-					stateChangesPtr = IntPtr.Zero;
 				}
 			}
 			base.Dispose(disposing);
@@ -343,10 +332,10 @@ namespace Microsoft.Xna.Framework.Graphics
 				GraphicsDevice.GLDevice,
 				glEffect,
 				pass,
-				stateChangesPtr
+				GraphicsDevice.effectStateChangesPtr
 			);
 			MOJOSHADER_effectStateChanges *stateChanges =
-				(MOJOSHADER_effectStateChanges*) stateChangesPtr;
+				(MOJOSHADER_effectStateChanges*) GraphicsDevice.effectStateChangesPtr;
 			if (stateChanges->render_state_change_count > 0)
 			{
 				PipelineCache pipelineCache = GraphicsDevice.PipelineCache;
@@ -925,7 +914,7 @@ namespace Microsoft.Xna.Framework.Graphics
 					continue;
 				}
 
-				parameters.Add(new EffectParameter(
+				EffectParameter toAdd = new EffectParameter(
 					Marshal.PtrToStringAnsi(param.value.name),
 					Marshal.PtrToStringAnsi(param.value.semantic),
 					(int) param.value.type.rows,
@@ -939,8 +928,16 @@ namespace Microsoft.Xna.Framework.Graphics
 						param.annotation_count
 					),
 					param.value.values,
-					param.value.value_count * sizeof(float)
-				));
+					param.value.value_count * sizeof(float),
+					this
+				);
+				if (param.value.type.parameter_type == MOJOSHADER_symbolType.MOJOSHADER_SYMTYPE_STRING)
+				{
+					int* index = (int*) param.value.values;
+					toAdd.cachedString = INTERNAL_GetStringFromObjectTable(*index);
+				}
+				parameters.Add(toAdd);
+
 			}
 			Parameters = new EffectParameterCollection(parameters);
 
@@ -983,7 +980,8 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		internal unsafe static EffectParameterCollection INTERNAL_readEffectParameterStructureMembers(
 			EffectParameter parameter,
-			IntPtr _type
+			IntPtr _type,
+			Effect outer
 		) {
 			if (_type == IntPtr.Zero)
 			{
@@ -1006,7 +1004,7 @@ namespace Microsoft.Xna.Framework.Graphics
 						{
 							memSize *= mem[j].info.elements;
 						}
-						memList.Add(new EffectParameter(
+						EffectParameter toAdd = new EffectParameter(
 							Marshal.PtrToStringAnsi(mem[j].name),
 							null,
 							(int) mem[j].info.rows,
@@ -1014,11 +1012,19 @@ namespace Microsoft.Xna.Framework.Graphics
 							(int) mem[j].info.elements,
 							XNAClass[(int) mem[j].info.parameter_class],
 							XNAType[(int) mem[j].info.parameter_type],
-							IntPtr.Zero, // FIXME: Nested structs! -flibit
+							null, // FIXME: Nested structs! -flibit
 							null,
 							parameter.values + curOffset.ToInt32(),
-							memSize * 4
-						));
+							memSize * 4,
+							outer
+						);
+
+						if (mem[j].info.parameter_type == MOJOSHADER_symbolType.MOJOSHADER_SYMTYPE_STRING)
+						{
+							int* index = (int*) (parameter.values + curOffset.ToInt32());
+							toAdd.cachedString = outer.INTERNAL_GetStringFromObjectTable(*index);
+						}
+						memList.Add(toAdd);
 						curOffset += (int) memSize * 4;
 					}
 				}
@@ -1026,6 +1032,20 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 
 			return structMembers;
+		}
+
+		private unsafe string INTERNAL_GetStringFromObjectTable(int index)
+		{
+			MOJOSHADER_effect* effectPtr = (MOJOSHADER_effect*) effectData;
+			MOJOSHADER_effectObject* objectsPtr = (MOJOSHADER_effectObject*) effectPtr->objects;
+			if (index < effectPtr->object_count)
+			{
+				return Marshal.PtrToStringAnsi(objectsPtr[index].stringvalue.stringvalue);
+			}
+			else
+			{
+				throw new InvalidOperationException("Invalid effect object index");
+			}
 		}
 
 		private unsafe EffectPass INTERNAL_readPass(
@@ -1058,7 +1078,8 @@ namespace Microsoft.Xna.Framework.Graphics
 			for (int i = 0; i < numAnnotations; i += 1)
 			{
 				MOJOSHADER_effectAnnotation anno = annoPtr[i];
-				annotations.Add(new EffectAnnotation(
+
+				EffectAnnotation toAdd = new EffectAnnotation(
 					Marshal.PtrToStringAnsi(anno.name),
 					Marshal.PtrToStringAnsi(anno.semantic),
 					(int) anno.type.rows,
@@ -1066,7 +1087,13 @@ namespace Microsoft.Xna.Framework.Graphics
 					XNAClass[(int) anno.type.parameter_class],
 					XNAType[(int) anno.type.parameter_type],
 					anno.values
-				));
+				);
+				if (anno.type.parameter_type == MOJOSHADER_symbolType.MOJOSHADER_SYMTYPE_STRING)
+				{
+					int* index = (int*) anno.values;
+					toAdd.cachedString = INTERNAL_GetStringFromObjectTable(*index);
+				}
+				annotations.Add(toAdd);
 			}
 			return new EffectAnnotationCollection(annotations);
 		}
