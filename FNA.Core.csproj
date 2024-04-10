@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFrameworks>net7.0</TargetFrameworks>
-		<Platforms>x64</Platforms>
 	</PropertyGroup>
 	<PropertyGroup>
 		<EnableDefaultItems>false</EnableDefaultItems>
@@ -184,7 +183,6 @@
 		<Compile Include="src\Graphics\GraphicsDeviceStatus.cs" />
 		<Compile Include="src\Graphics\GraphicsProfile.cs" />
 		<Compile Include="src\Graphics\GraphicsResource.cs" />
-		<Compile Include="src\Graphics\GraphicsResourceDisposalHandle.cs" />
 		<Compile Include="src\Graphics\IGraphicsDeviceService.cs" />
 		<Compile Include="src\Graphics\IRenderTarget.cs" />
 		<Compile Include="src\Graphics\Model.cs" />

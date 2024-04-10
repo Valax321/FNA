@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2023 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2024 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -419,6 +419,8 @@ namespace Microsoft.Xna.Framework.Graphics
 				out height,
 				out len
 			);
+			if ((pixels == IntPtr.Zero) || (width <= 0) || (height <= 0))
+				throw new Exception("Decoding image failed!");
 
 			Texture2D result = new Texture2D(
 				graphicsDevice,
@@ -458,6 +460,8 @@ namespace Microsoft.Xna.Framework.Graphics
 				height,
 				zoom
 			);
+			if ((pixels == IntPtr.Zero) || (realWidth <= 0) || (realHeight <= 0))
+				throw new Exception("Decoding image failed!");
 
 			Texture2D result = new Texture2D(
 				graphicsDevice,

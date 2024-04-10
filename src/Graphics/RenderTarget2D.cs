@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2023 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2024 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -9,6 +9,7 @@
 
 #region Using Statements
 using System;
+using System.Threading;
 #endregion
 
 namespace Microsoft.Xna.Framework.Graphics
@@ -179,19 +180,21 @@ namespace Microsoft.Xna.Framework.Graphics
 		{
 			if (!IsDisposed)
 			{
-				if (glColorBuffer != IntPtr.Zero)
+				IntPtr toDispose = Interlocked.Exchange(ref glColorBuffer, IntPtr.Zero);
+				if (toDispose != IntPtr.Zero)
 				{
 					FNA3D.FNA3D_AddDisposeRenderbuffer(
 						GraphicsDevice.GLDevice,
-						glColorBuffer
+						toDispose
 					);
 				}
 
-				if (glDepthStencilBuffer != IntPtr.Zero)
+				toDispose = Interlocked.Exchange(ref glDepthStencilBuffer, IntPtr.Zero);
+				if (toDispose != IntPtr.Zero)
 				{
 					FNA3D.FNA3D_AddDisposeRenderbuffer(
 						GraphicsDevice.GLDevice,
-						glDepthStencilBuffer
+						toDispose
 					);
 				}
 			}
@@ -205,56 +208,6 @@ namespace Microsoft.Xna.Framework.Graphics
 		protected internal override void GraphicsDeviceResetting()
 		{
 			base.GraphicsDeviceResetting();
-		}
-
-		#endregion
-
-		#region Emergency Disposal
-
-		internal override GraphicsResourceDisposalHandle[] CreateDisposalHandles()
-		{
-			int length = 1;
-			int index = 0;
-			
-			if (glColorBuffer != IntPtr.Zero)
-			{
-				length += 1;
-			}
-
-			if (glDepthStencilBuffer != IntPtr.Zero)
-			{
-				length += 1;
-			}
-
-			GraphicsResourceDisposalHandle[] handles = new GraphicsResourceDisposalHandle[length];
-
-			handles[index] = new GraphicsResourceDisposalHandle
-			{
-				disposeAction = FNA3D.FNA3D_AddDisposeTexture,
-				resourceHandle = texture
-			};
-
-			if (glColorBuffer != IntPtr.Zero)
-			{
-				handles[index] = new GraphicsResourceDisposalHandle
-				{
-					disposeAction = FNA3D.FNA3D_AddDisposeRenderbuffer,
-					resourceHandle = glColorBuffer
-				};
-				index += 1;
-			}
-
-			if (glDepthStencilBuffer != IntPtr.Zero)
-			{
-				handles[index] = new GraphicsResourceDisposalHandle
-				{
-					disposeAction = FNA3D.FNA3D_AddDisposeRenderbuffer,
-					resourceHandle = glDepthStencilBuffer
-				};
-				index += 1;
-			}
-			
-			return handles;
 		}
 
 		#endregion

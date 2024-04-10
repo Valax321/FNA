@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2023 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2024 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -10,6 +10,7 @@
 #region Using Statements
 using System;
 using System.IO;
+using System.Threading;
 #endregion
 
 namespace Microsoft.Xna.Framework.Graphics
@@ -73,10 +74,15 @@ namespace Microsoft.Xna.Framework.Graphics
 			{
 				GraphicsDevice.Textures.RemoveDisposedTexture(this);
 				GraphicsDevice.VertexTextures.RemoveDisposedTexture(this);
-				FNA3D.FNA3D_AddDisposeTexture(
-					GraphicsDevice.GLDevice,
-					texture
-				);
+
+				IntPtr toDispose = Interlocked.Exchange(ref texture, IntPtr.Zero);
+				if (toDispose != IntPtr.Zero)
+				{
+					FNA3D.FNA3D_AddDisposeTexture(
+						GraphicsDevice.GLDevice,
+						toDispose
+					);
+				}
 			}
 			base.Dispose(disposing);
 		}
@@ -224,7 +230,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			int height,
 			SurfaceFormat format
 		) {
-			if (format == SurfaceFormat.ColorBgraEXT)
+			if (format == SurfaceFormat.Color || format == SurfaceFormat.ColorBgraEXT)
 			{
 				return (((width * 32) + 7) / 8) * height;
 			}
@@ -472,18 +478,24 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 			else if ((formatFlags & DDPF_RGB) == DDPF_RGB)
 			{
-				if (	formatRGBBitCount != 32 ||
-					formatRBitMask != 0x00FF0000 ||
-					formatGBitMask != 0x0000FF00 ||
-					formatBBitMask != 0x000000FF ||
-					formatABitMask != 0xFF000000	)
-				{
-					throw new NotSupportedException(
-						"Unsupported DDS texture format"
-					);
-				}
+				if (formatRGBBitCount != 32)
+					throw new NotSupportedException("Unsupported DDS texture format: Alpha channel required");
 
-				format = SurfaceFormat.ColorBgraEXT;
+				bool isBgra = (formatRBitMask == 0x00FF0000 &&
+					formatGBitMask == 0x0000FF00 &&
+					formatBBitMask == 0x000000FF &&
+					formatABitMask == 0xFF000000);
+				bool isRgba = (formatRBitMask == 0x000000FF &&
+					formatGBitMask == 0x0000FF00 &&
+					formatBBitMask == 0x00FF0000 &&
+					formatABitMask == 0xFF000000);
+
+				if (isBgra)
+					format = SurfaceFormat.ColorBgraEXT;
+				else if (isRgba)
+					format = SurfaceFormat.Color;
+				else
+					throw new NotSupportedException("Unsupported DDS texture format: Only RGBA and BGRA are supported");
 			}
 			else
 			{
@@ -491,22 +503,6 @@ namespace Microsoft.Xna.Framework.Graphics
 					"Unsupported DDS texture format"
 				);
 			}
-		}
-
-		#endregion
-
-		#region Emergency Disposal
-
-		internal override GraphicsResourceDisposalHandle[] CreateDisposalHandles()
-		{
-			return new GraphicsResourceDisposalHandle[]
-			{
-				new GraphicsResourceDisposalHandle
-				{
-					disposeAction = FNA3D.FNA3D_AddDisposeTexture,
-					resourceHandle = texture
-				}
-			};
 		}
 
 		#endregion

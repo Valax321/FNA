@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2023 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2024 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -9,6 +9,7 @@
 
 #region Using Statements
 using System;
+using System.Threading;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 #endregion
@@ -285,33 +286,18 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		#endregion
 
-		#region Emergency Disposal
-
-		internal override GraphicsResourceDisposalHandle[] CreateDisposalHandles()
-		{
-			return new GraphicsResourceDisposalHandle[]
-			{
-				new GraphicsResourceDisposalHandle
-				{
-					disposeAction = FNA3D.FNA3D_AddDisposeEffect,
-					resourceHandle = glEffect
-				}
-			};
-		}
-
-		#endregion
-
 		#region Protected Methods
 
 		protected override void Dispose(bool disposing)
 		{
 			if (!IsDisposed)
 			{
-				if (glEffect != IntPtr.Zero)
+				IntPtr toDispose = Interlocked.Exchange(ref glEffect, IntPtr.Zero);
+				if (toDispose != IntPtr.Zero)
 				{
 					FNA3D.FNA3D_AddDisposeEffect(
 						GraphicsDevice.GLDevice,
-						glEffect
+						toDispose
 					);
 				}
 			}
@@ -915,8 +901,8 @@ namespace Microsoft.Xna.Framework.Graphics
 				}
 
 				EffectParameter toAdd = new EffectParameter(
-					Marshal.PtrToStringAnsi(param.value.name),
-					Marshal.PtrToStringAnsi(param.value.semantic),
+					MarshalHelper.PtrToInternedStringAnsi(param.value.name),
+					MarshalHelper.PtrToInternedStringAnsi(param.value.semantic),
 					(int) param.value.type.rows,
 					(int) param.value.type.columns,
 					(int) param.value.type.elements,
@@ -966,7 +952,7 @@ namespace Microsoft.Xna.Framework.Graphics
 				}
 
 				techniques.Add(new EffectTechnique(
-					Marshal.PtrToStringAnsi(techPtr->name),
+					MarshalHelper.PtrToInternedStringAnsi(techPtr->name),
 					(IntPtr) techPtr,
 					passes,
 					INTERNAL_readAnnotations(
@@ -1005,7 +991,7 @@ namespace Microsoft.Xna.Framework.Graphics
 							memSize *= mem[j].info.elements;
 						}
 						EffectParameter toAdd = new EffectParameter(
-							Marshal.PtrToStringAnsi(mem[j].name),
+							MarshalHelper.PtrToInternedStringAnsi(mem[j].name),
 							null,
 							(int) mem[j].info.rows,
 							(int) mem[j].info.columns,
@@ -1053,7 +1039,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			IntPtr techPtr, uint index
 		) {
 			return new EffectPass(
-				Marshal.PtrToStringAnsi(pass.name),
+				MarshalHelper.PtrToInternedStringAnsi(pass.name),
 				INTERNAL_readAnnotations(
 					pass.annotations,
 					pass.annotation_count
@@ -1080,8 +1066,8 @@ namespace Microsoft.Xna.Framework.Graphics
 				MOJOSHADER_effectAnnotation anno = annoPtr[i];
 
 				EffectAnnotation toAdd = new EffectAnnotation(
-					Marshal.PtrToStringAnsi(anno.name),
-					Marshal.PtrToStringAnsi(anno.semantic),
+					MarshalHelper.PtrToInternedStringAnsi(anno.name),
+					MarshalHelper.PtrToInternedStringAnsi(anno.semantic),
 					(int) anno.type.rows,
 					(int) anno.type.columns,
 					XNAClass[(int) anno.type.parameter_class],

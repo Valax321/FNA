@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2023 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2024 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -9,6 +9,7 @@
 
 #region Using Statements
 using System;
+using System.Threading;
 using System.Runtime.InteropServices;
 #endregion
 
@@ -117,10 +118,14 @@ namespace Microsoft.Xna.Framework.Graphics
 		{
 			if (!IsDisposed)
 			{
-				FNA3D.FNA3D_AddDisposeVertexBuffer(
-					GraphicsDevice.GLDevice,
-					buffer
-				);
+				IntPtr toDispose = Interlocked.Exchange(ref buffer, IntPtr.Zero);
+				if (toDispose != IntPtr.Zero)
+				{
+					FNA3D.FNA3D_AddDisposeVertexBuffer(
+						GraphicsDevice.GLDevice,
+						toDispose
+					);
+				}
 			}
 			base.Dispose(disposing);
 		}
@@ -339,22 +344,6 @@ namespace Microsoft.Xna.Framework.Graphics
 		internal protected override void GraphicsDeviceResetting()
 		{
 			// FIXME: Do we even want to bother with DeviceResetting for GL? -flibit
-		}
-
-		#endregion
-
-		#region Emergency Disposal
-
-		internal override GraphicsResourceDisposalHandle[] CreateDisposalHandles()
-		{
-			return new GraphicsResourceDisposalHandle[]
-			{
-				new GraphicsResourceDisposalHandle
-				{
-					disposeAction = FNA3D.FNA3D_AddDisposeVertexBuffer,
-					resourceHandle = buffer
-				}
-			};
 		}
 
 		#endregion
