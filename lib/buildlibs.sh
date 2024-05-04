@@ -366,4 +366,4 @@ function buildMVK()
 }
 
 # Build 'em all!
-buildSDL && buildFNA3D && buildFAudio && buildTheorafile && buildStubs && buildMVK
+buildSDL && buildFNA3D && buildFAudio && buildTheorafile && buildStubs
