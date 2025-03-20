@@ -283,7 +283,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		#region Private Disposal Variables
 
-		/* 
+		/*
 		 * Use weak GCHandles for the global resources list as we do not
 		 * know when a resource may be disposed and collected. We do not
 		 * want to prevent a resource from being collected by holding a
@@ -1280,37 +1280,46 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		#region DrawPrimitives: Vertex Arrays, Index Arrays
 
-		public void DrawUserIndexedPrimitives<T>(
+		public unsafe void DrawUserIndexedPrimitives<T>(
 			PrimitiveType primitiveType,
-			T[] vertexData,
+			ReadOnlySpan<T> vertexData,
 			int vertexOffset,
 			int numVertices,
-			short[] indexData,
+			ReadOnlySpan<short> indexData,
 			int indexOffset,
 			int primitiveCount
 		) where T : struct, IVertexType {
 			ApplyState();
 
 			// Pin the buffers.
-			GCHandle vbHandle = GCHandle.Alloc(vertexData, GCHandleType.Pinned);
-			GCHandle ibHandle = GCHandle.Alloc(indexData, GCHandleType.Pinned);
+			//GCHandle vbHandle = GCHandle.Alloc(vertexData, GCHandleType.Pinned);
+			//GCHandle ibHandle = GCHandle.Alloc(indexData, GCHandleType.Pinned);
 
-			PrepareUserVertexBuffer(
-				vbHandle.AddrOfPinnedObject(),
-				numVertices,
-				vertexOffset,
-				VertexDeclarationCache<T>.VertexDeclaration
-			);
-			PrepareUserIndexBuffer(
-				ibHandle.AddrOfPinnedObject(),
-				PrimitiveVerts(primitiveType, primitiveCount),
-				indexOffset,
-				2
-			);
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+			fixed (T* v = vertexData)
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+			{
+				PrepareUserVertexBuffer(
+					(IntPtr)v,
+					numVertices,
+					vertexOffset,
+					VertexDeclarationCache<T>.VertexDeclaration
+				);
+			}
+
+			fixed (short* s = indexData)
+			{
+				PrepareUserIndexBuffer(
+					(IntPtr)s,
+					PrimitiveVerts(primitiveType, primitiveCount),
+					indexOffset,
+					2
+				);
+			}
 
 			// Release the handles.
-			ibHandle.Free();
-			vbHandle.Free();
+			//ibHandle.Free();
+			//vbHandle.Free();
 
 			FNA3D.FNA3D_DrawIndexedPrimitives(
 				GLDevice,
@@ -1588,7 +1597,7 @@ namespace Microsoft.Xna.Framework.Graphics
 				);
 			}
 
-			for (int sampler = 0; sampler < modifiedVertexSamplers.Length; sampler += 1) 
+			for (int sampler = 0; sampler < modifiedVertexSamplers.Length; sampler += 1)
 			{
 				if (!modifiedVertexSamplers[sampler])
 				{
