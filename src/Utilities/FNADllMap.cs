@@ -29,6 +29,9 @@ namespace Microsoft.Xna.Framework
 		private static Dictionary<string, string> mapDictionary
 			= new Dictionary<string, string>();
 
+		private static List<string> searchPaths
+			= new List<string>();
+
 		#endregion
 
 		#region Private Static Methods
@@ -71,6 +74,13 @@ namespace Microsoft.Xna.Framework
 			if (!mapDictionary.TryGetValue(libraryName, out mappedName))
 			{
 				mappedName = libraryName;
+			}
+
+			foreach (string path in searchPaths)
+			{
+				string fullPath = Path.Combine(path, mappedName);
+				if (NativeLibrary.TryLoad(fullPath, assembly, dllImportSearchPath, out IntPtr handle))
+					return handle;
 			}
 
 			return NativeLibrary.Load(mappedName, assembly, dllImportSearchPath);
@@ -209,8 +219,60 @@ namespace Microsoft.Xna.Framework
 				mapDictionary.Add(oldLib, newLib);
 			}
 
+			if (Environment.GetEnvironmentVariable("FNA_USE_DLLMAP_SEARCH_PATHS")?.Equals("1") ?? false)
+			{
+				foreach (XmlNode node in xmlDoc.GetElementsByTagName("searchpath"))
+				{
+					XmlAttribute path = node.Attributes["path"];
+					if (path != null)
+					{
+						var pathString = path.Value;
+						pathString = pathString.Replace("{rid}", GetRidForPlatform());
+						if (!Path.IsPathFullyQualified(pathString))
+						{
+							pathString = Path.Combine(Directory.GetCurrentDirectory(), pathString);
+						}
+
+						searchPaths.Add(pathString);
+					}
+				}
+			}
+
 			// Set the resolver callback
 			NativeLibrary.SetDllImportResolver(assembly, MapAndLoad);
+		}
+
+		private static string GetRidForPlatform()
+		{
+			/*
+			 * I could have used RuntimeInformation.RuntimeEnvironment to get this
+			 * but msdn recommends not parsing the value of that (presumably the format
+			 * can change in future). So instead we get this limited list that only supports
+			 * the platforms I will ever ship on.
+			 */
+
+			var arch = RuntimeInformation.ProcessArchitecture switch
+			{
+				Architecture.Arm => "arm",
+				Architecture.Arm64 => "arm64",
+				Architecture.X86 => "x86",
+				Architecture.X64 => "x64",
+				Architecture.LoongArch64 => "loongarch64",
+				_ => string.Empty // We dont really care about the others
+			};
+
+			var rid = string.Empty;
+			if (OperatingSystem.IsWindows())
+				rid = $"win-{arch}";
+			else if (OperatingSystem.IsMacOS())
+				rid = "osx"; // On mac we use universal libs so we don't need to differentiate arm and intel
+			else if (OperatingSystem.IsLinux())
+				rid = $"linux-{arch}";
+			else if (OperatingSystem.IsAndroid())
+				rid = $"android-{arch}";
+			// You're on your own for the rest
+
+			return rid;
 		}
 
 		#endregion
