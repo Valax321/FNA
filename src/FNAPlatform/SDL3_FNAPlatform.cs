@@ -2671,11 +2671,13 @@ namespace Microsoft.Xna.Framework
 					return retVal;
 				}
 			}
+			/* Thanks but it's fine :)
 			FNALoggerEXT.LogWarn(
 				"KEY/SCANCODE MISSING FROM SDL3->XNA DICTIONARY: " +
 				sym.ToString() + " " +
 				scancode.ToString()
 			);
+			*/
 			return Keys.None;
 		}
 
@@ -2695,17 +2697,21 @@ namespace Microsoft.Xna.Framework
 				{
 					return result;
 				}
+				/* Seriously it's fine
 				FNALoggerEXT.LogWarn(
 					"KEYCODE MISSING FROM SDL3->XNA DICTIONARY: " +
 					sym.ToString()
 				);
+				*/
 			}
 			else
 			{
+				/* SERIOUSLY ITS FINE
 				FNALoggerEXT.LogWarn(
 					"SCANCODE MISSING FROM XNA->SDL3 DICTIONARY: " +
 					scancode.ToString()
 				);
+				*/
 			}
 			return Keys.None;
 		}
