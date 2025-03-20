@@ -7,6 +7,8 @@
  */
 #endregion
 
+using System;
+
 namespace Microsoft.Xna.Framework.Input
 {
 	/// <summary>
@@ -156,6 +158,27 @@ namespace Microsoft.Xna.Framework.Input
 		public static bool operator !=(MouseState left, MouseState right)
 		{
 			return !(left == right);
+		}
+
+		/// <summary>
+		/// Accessor for mouse buttons by index (similar to <see cref="KeyboardState"/>).
+		/// </summary>
+		/// <param name="index">Mouse button index.</param>
+		/// <exception cref="ArgumentOutOfRangeException">Thrown if index is less than 0 or >= 5</exception>
+		public ButtonState this[int index]
+		{
+			get
+			{
+				return index switch
+				{
+					0 => LeftButton,
+					1 => RightButton,
+					2 => MiddleButton,
+					3 => XButton1,
+					4 => XButton2,
+					_ => throw new ArgumentOutOfRangeException(nameof(index), index, null)
+				};
+			}
 		}
 
 		/// <summary>
