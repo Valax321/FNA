@@ -1661,11 +1661,7 @@ namespace Microsoft.Xna.Framework
 			A = (byte) MathHelper.Clamp(alpha * 255, Byte.MinValue, Byte.MaxValue);
 		}
 
-		#endregion
-
-		#region Private Constructors
-
-		private Color(uint packedValue)
+		public Color(uint packedValue)
 		{
 			this.packedValue = packedValue;
 		}
