@@ -31,6 +31,7 @@ namespace Microsoft.Xna.Framework
 			private set;
 		}
 
+#if !FNA_EXCLUDE_CONTENT_MANAGER
 		private ContentManager INTERNAL_content;
 		public ContentManager Content
 		{
@@ -47,6 +48,7 @@ namespace Microsoft.Xna.Framework
 				INTERNAL_content = value;
 			}
 		}
+#endif
 
 		public GraphicsDevice GraphicsDevice
 		{
@@ -245,7 +247,9 @@ namespace Microsoft.Xna.Framework
 			LaunchParameters = new LaunchParameters();
 			Components = new GameComponentCollection();
 			Services = new GameServiceContainer();
+			#if !FNA_EXCLUDE_CONTENT_MANAGER
 			Content = new ContentManager(Services);
+			#endif
 
 			updateableComponents = new List<IUpdateable>();
 			currentlyUpdatingComponents = new List<IUpdateable>();
@@ -319,10 +323,12 @@ namespace Microsoft.Xna.Framework
 						}
 					}
 
+					#if !FNA_EXCLUDE_CONTENT_MANAGER
 					if (Content != null)
 					{
 						Content.Dispose();
 					}
+					#endif
 
 					if (graphicsDeviceService != null)
 					{
