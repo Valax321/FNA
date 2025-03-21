@@ -16,7 +16,8 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
-
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Xna.Framework.Design;
 #endregion
 
@@ -28,6 +29,7 @@ namespace Microsoft.Xna.Framework
 	[Serializable]
 	[TypeConverter(typeof(Vector2Converter))]
 	[DebuggerDisplay("{DebugDisplayString,nq}")]
+	[JsonConverter(typeof(Vector2JsonConverter))]
 	public struct Vector2 : IEquatable<Vector2>
 	{
 		#region Public Static Properties
@@ -1177,5 +1179,30 @@ namespace Microsoft.Xna.Framework
 		}
 
 		#endregion
+	}
+
+	public sealed class Vector2JsonConverter : JsonConverter<Vector2>
+	{
+		public override Vector2 Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+		{
+			if (reader.TokenType != JsonTokenType.StartObject)
+			{
+				throw new JsonException();
+			}
+
+			reader.Read();
+			var x = reader.GetSingle();
+			var y = reader.GetSingle();
+			reader.Read();
+			return new Vector2(x, y);
+		}
+
+		public override void Write(Utf8JsonWriter writer, Vector2 value, JsonSerializerOptions options)
+		{
+			writer.WriteStartObject();
+			writer.WriteNumber("x", value.X);
+			writer.WriteNumber("y", value.Y);
+			writer.WriteEndObject();
+		}
 	}
 }

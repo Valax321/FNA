@@ -15,7 +15,8 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Xna.Framework.Design;
 #endregion
 
@@ -27,6 +28,7 @@ namespace Microsoft.Xna.Framework
 	[Serializable]
 	[TypeConverter(typeof(QuaternionConverter))]
 	[DebuggerDisplay("{DebugDisplayString,nq}")]
+	[JsonConverter(typeof(QuaternionJsonConverter))]
 	public struct Quaternion : IEquatable<Quaternion>
 	{
 		#region Public Static Properties
@@ -1002,5 +1004,34 @@ namespace Microsoft.Xna.Framework
 		}
 
 		#endregion
+	}
+
+	public sealed class QuaternionJsonConverter : JsonConverter<Quaternion>
+	{
+		public override Quaternion Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+		{
+			if (reader.TokenType != JsonTokenType.StartObject)
+			{
+				throw new JsonException();
+			}
+
+			reader.Read();
+			var x = reader.GetSingle();
+			var y = reader.GetSingle();
+			var z = reader.GetSingle();
+			var w = reader.GetSingle();
+			reader.Read();
+			return new Quaternion(x, y, z, w);
+		}
+
+		public override void Write(Utf8JsonWriter writer, Quaternion value, JsonSerializerOptions options)
+		{
+			writer.WriteStartObject();
+			writer.WriteNumber("x", value.X);
+			writer.WriteNumber("y", value.Y);
+			writer.WriteNumber("z", value.Z);
+			writer.WriteNumber("w", value.W);
+			writer.WriteEndObject();
+		}
 	}
 }

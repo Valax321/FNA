@@ -15,8 +15,10 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
-
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Xna.Framework.Design;
 using Microsoft.Xna.Framework.Graphics.PackedVector;
 #endregion
@@ -29,6 +31,7 @@ namespace Microsoft.Xna.Framework
 	[Serializable]
 	[TypeConverter(typeof(ColorConverter))]
 	[DebuggerDisplay("{DebugDisplayString,nq}")]
+	[JsonConverter(typeof(ActorIdConverter))]
 	public struct Color : IEquatable<Color>, IPackedVector, IPackedVector<uint>
 	{
 		#region Public Properties
@@ -1880,5 +1883,18 @@ namespace Microsoft.Xna.Framework
 
 		#endregion
 
+	}
+
+	public sealed class ActorIdConverter : JsonConverter<Color>
+	{
+		public override Color Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+		{
+			return new Color(uint.Parse(reader.GetString() ?? string.Empty, NumberStyles.HexNumber));
+		}
+
+		public override void Write(Utf8JsonWriter writer, Color value, JsonSerializerOptions options)
+		{
+			writer.WriteStringValue(value.PackedValue.ToString("x8"));
+		}
 	}
 }

@@ -16,7 +16,8 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
-
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Xna.Framework.Design;
 #endregion
 
@@ -28,6 +29,7 @@ namespace Microsoft.Xna.Framework
 	[Serializable]
 	[TypeConverter(typeof(Vector3Converter))]
 	[DebuggerDisplay("{DebugDisplayString,nq}")]
+	[JsonConverter(typeof(Vector3JsonConverter))]
 	public struct Vector3 : IEquatable<Vector3>
 	{
 		#region Public Static Properties
@@ -1521,5 +1523,32 @@ namespace Microsoft.Xna.Framework
 		}
 
 		#endregion
+	}
+
+	public sealed class Vector3JsonConverter : JsonConverter<Vector3>
+	{
+		public override Vector3 Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+		{
+			if (reader.TokenType != JsonTokenType.StartObject)
+			{
+				throw new JsonException();
+			}
+
+			reader.Read();
+			var x = reader.GetSingle();
+			var y = reader.GetSingle();
+			var z = reader.GetSingle();
+			reader.Read();
+			return new Vector3(x, y, z);
+		}
+
+		public override void Write(Utf8JsonWriter writer, Vector3 value, JsonSerializerOptions options)
+		{
+			writer.WriteStartObject();
+			writer.WriteNumber("x", value.X);
+			writer.WriteNumber("y", value.Y);
+			writer.WriteNumber("z", value.Z);
+			writer.WriteEndObject();
+		}
 	}
 }
