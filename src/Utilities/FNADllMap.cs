@@ -101,6 +101,10 @@ namespace Microsoft.Xna.Framework
 		[ModuleInitializer]
 		public static void Init()
 		{
+			/*
+			 * NOTE: this will return false if PublishAOT is defined, even if we're still running a JIT build!
+			 * Kinda weird!
+			 */
 			if (!RuntimeFeature.IsDynamicCodeCompiled)
 			{
 				/* NativeAOT platforms don't perform dynamic loading,
