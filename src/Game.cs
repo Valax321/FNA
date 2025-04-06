@@ -31,7 +31,7 @@ namespace Microsoft.Xna.Framework
 			private set;
 		}
 
-#if !FNA_EXCLUDE_CONTENT_MANAGER
+#if FNA_LEGACY_CONTENT_PIPELINE
 		private ContentManager INTERNAL_content;
 		public ContentManager Content
 		{
@@ -247,7 +247,7 @@ namespace Microsoft.Xna.Framework
 			LaunchParameters = new LaunchParameters();
 			Components = new GameComponentCollection();
 			Services = new GameServiceContainer();
-			#if !FNA_EXCLUDE_CONTENT_MANAGER
+			#if FNA_LEGACY_CONTENT_PIPELINE
 			Content = new ContentManager(Services);
 			#endif
 
@@ -323,7 +323,7 @@ namespace Microsoft.Xna.Framework
 						}
 					}
 
-					#if !FNA_EXCLUDE_CONTENT_MANAGER
+					#if FNA_LEGACY_CONTENT_PIPELINE
 					if (Content != null)
 					{
 						Content.Dispose();
@@ -341,7 +341,9 @@ namespace Microsoft.Xna.Framework
 						FNAPlatform.DisposeWindow(Window);
 					}
 
+					#if FNA_LEGACY_CONTENT_PIPELINE
 					ContentTypeReaderManager.ClearTypeCreators();
+					#endif
 				}
 
 				AppDomain.CurrentDomain.UnhandledException -= OnUnhandledException;
