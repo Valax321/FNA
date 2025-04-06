@@ -16,7 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-
+using System.Numerics;
 using Microsoft.Xna.Framework.Design;
 #endregion
 
@@ -37,7 +37,7 @@ namespace Microsoft.Xna.Framework
 			get
 			{
 				return string.Concat(
-					"Center( ", Center.DebugDisplayString, " ) \r\n",
+					"Center( ", Center.ToString(), " ) \r\n",
 					"Radius( ", Radius.ToString(), " ) "
 				);
 			}
@@ -81,7 +81,7 @@ namespace Microsoft.Xna.Framework
 		/// </summary>
 		/// <param name="matrix">The transformation <see cref="Matrix"/>.</param>
 		/// <returns>Transformed <see cref="BoundingSphere"/>.</returns>
-		public BoundingSphere Transform(Matrix matrix)
+		public BoundingSphere Transform(Matrix4x4 matrix)
 		{
 			BoundingSphere sphere = new BoundingSphere();
 			sphere.Center = Vector3.Transform(this.Center, matrix);
@@ -103,7 +103,7 @@ namespace Microsoft.Xna.Framework
 		/// </summary>
 		/// <param name="matrix">The transformation <see cref="Matrix"/>.</param>
 		/// <param name="result">Transformed <see cref="BoundingSphere"/> as an output parameter.</param>
-		public void Transform(ref Matrix matrix, out BoundingSphere result)
+		public void Transform(ref Matrix4x4 matrix, out BoundingSphere result)
 		{
 			result.Center = Vector3.Transform(this.Center, matrix);
 			result.Radius = this.Radius *
@@ -255,7 +255,7 @@ namespace Microsoft.Xna.Framework
 		public ContainmentType Contains(BoundingSphere sphere)
 		{
 			float sqDistance;
-			Vector3.DistanceSquared(ref sphere.Center, ref Center, out sqDistance);
+			sqDistance = Vector3.DistanceSquared(sphere.Center, Center);
 
 			if (sqDistance > (sphere.Radius + Radius) * (sphere.Radius + Radius))
 			{
@@ -277,7 +277,7 @@ namespace Microsoft.Xna.Framework
 		{
 			float sqRadius = Radius * Radius;
 			float sqDistance;
-			Vector3.DistanceSquared(ref point, ref Center, out sqDistance);
+			sqDistance = Vector3.DistanceSquared(point, Center);
 
 			if (sqDistance > sqRadius)
 			{
@@ -424,7 +424,7 @@ namespace Microsoft.Xna.Framework
 				max = maxz;
 				min = minz;
 			}
-			
+
 			Vector3 center = (min + max) * 0.5f;
 			float radius = Vector3.Distance(max, center);
 
@@ -557,7 +557,7 @@ namespace Microsoft.Xna.Framework
 		public void Intersects(ref BoundingSphere sphere, out bool result)
 		{
 			float sqDistance;
-			Vector3.DistanceSquared(ref sphere.Center, ref Center, out sqDistance);
+			sqDistance = Vector3.DistanceSquared(sphere.Center, Center);
 			result = !(sqDistance > (sphere.Radius + Radius) * (sphere.Radius + Radius));
 		}
 
@@ -603,7 +603,7 @@ namespace Microsoft.Xna.Framework
 		{
 			float distance = default(float);
 			// TODO: We might want to inline this for performance reasons.
-			Vector3.Dot(ref plane.Normal, ref this.Center, out distance);
+			distance = Vector3.Dot(plane.Normal, this.Center);
 			distance += plane.D;
 			if (distance > this.Radius)
 			{

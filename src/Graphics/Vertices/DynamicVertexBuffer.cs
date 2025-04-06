@@ -9,6 +9,7 @@
 
 #region Using Statements
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 #endregion
 
@@ -55,7 +56,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		public DynamicVertexBuffer(
 			GraphicsDevice graphicsDevice,
-			Type type,
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type,
 			int vertexCount,
 			BufferUsage bufferUsage
 		) : base(

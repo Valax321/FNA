@@ -7,6 +7,8 @@
  */
 #endregion
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Microsoft.Xna.Framework.Graphics
 {
 	/// <summary>
@@ -14,7 +16,7 @@ namespace Microsoft.Xna.Framework.Graphics
 	/// declaration for a particular type once.
 	/// </summary>
 	/// <typeparam name="T">A vertex structure which implements IVertexType.</typeparam>
-	internal static class VertexDeclarationCache<T>
+	internal static class VertexDeclarationCache<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>
 		where T : struct, IVertexType
 	{
 		#region Public Static Properties

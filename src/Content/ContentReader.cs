@@ -15,6 +15,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Numerics;
+
 #endregion
 
 namespace Microsoft.Xna.Framework.Content

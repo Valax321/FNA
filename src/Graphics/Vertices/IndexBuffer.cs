@@ -9,6 +9,7 @@
 
 #region Using Statements
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Runtime.InteropServices;
 #endregion
@@ -61,9 +62,10 @@ namespace Microsoft.Xna.Framework.Graphics
 		) {
 		}
 
+		#pragma warning disable IL3050
 		public IndexBuffer(
 			GraphicsDevice graphicsDevice,
-			Type indexType,
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type indexType,
 			int indexCount,
 			BufferUsage usage
 		) : this(
@@ -74,14 +76,16 @@ namespace Microsoft.Xna.Framework.Graphics
 			false
 		) {
 		}
+		#pragma warning restore IL3050
 
 		#endregion
 
 		#region Protected Constructors
 
+#pragma warning disable IL3050
 		protected IndexBuffer(
 			GraphicsDevice graphicsDevice,
-			Type indexType,
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type indexType,
 			int indexCount,
 			BufferUsage usage,
 			bool dynamic
@@ -93,6 +97,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			dynamic
 		) {
 		}
+#pragma warning restore IL3050
 
 		protected IndexBuffer(
 			GraphicsDevice graphicsDevice,
@@ -314,13 +319,14 @@ namespace Microsoft.Xna.Framework.Graphics
 		#endregion
 
 		#region Private Type Size Calculator
-		
+
 		/// <summary>
 		/// Gets the relevant IndexElementSize enum value for the given type.
 		/// </summary>
 		/// <param name="graphicsDevice">The graphics device.</param>
 		/// <param name="type">The type to use for the index buffer</param>
 		/// <returns>The IndexElementSize enum value that matches the type</returns>
+		[RequiresDynamicCode("Uses Marshal.SizeOf")]
 		private static IndexElementSize SizeForType(GraphicsDevice graphicsDevice, Type type)
 		{
 			int sizeInBytes = Marshal.SizeOf(type);

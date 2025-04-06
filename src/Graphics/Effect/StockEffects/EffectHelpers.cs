@@ -9,6 +9,8 @@
 
 #region Using Statements
 using System;
+using System.Numerics;
+
 #endregion
 
 namespace Microsoft.Xna.Framework.Graphics
@@ -69,20 +71,20 @@ namespace Microsoft.Xna.Framework.Graphics
         /// fog vector based on the current effect parameter settings.
         /// </summary>
         internal static EffectDirtyFlags SetWorldViewProjAndFog(EffectDirtyFlags dirtyFlags,
-                                                                ref Matrix world, ref Matrix view, ref Matrix projection, ref Matrix worldView,
+                                                                ref Matrix4x4 world, ref Matrix4x4 view, ref Matrix4x4 projection, ref Matrix4x4 worldView,
                                                                 bool fogEnabled, float fogStart, float fogEnd,
                                                                 EffectParameter worldViewProjParam, EffectParameter fogVectorParam)
         {
             // Recompute the world+view+projection matrix?
             if ((dirtyFlags & EffectDirtyFlags.WorldViewProj) != 0)
             {
-                Matrix worldViewProj;
-                
-                Matrix.Multiply(ref world, ref view, out worldView);
-                Matrix.Multiply(ref worldView, ref projection, out worldViewProj);
-                
+                Matrix4x4 worldViewProj;
+
+                worldView = Matrix4x4.Multiply(world, view);
+                worldViewProj = Matrix4x4.Multiply(worldView, projection);
+
                 worldViewProjParam.SetValue(worldViewProj);
-                
+
                 dirtyFlags &= ~EffectDirtyFlags.WorldViewProj;
             }
 
@@ -114,7 +116,7 @@ namespace Microsoft.Xna.Framework.Graphics
         /// <summary>
         /// Sets a vector which can be dotted with the object space vertex position to compute fog amount.
         /// </summary>
-        static void SetFogVector(ref Matrix worldView, float fogStart, float fogEnd, EffectParameter fogVectorParam)
+        static void SetFogVector(ref Matrix4x4 worldView, float fogStart, float fogEnd, EffectParameter fogVectorParam)
         {
             if (fogStart == fogEnd)
             {
@@ -127,7 +129,7 @@ namespace Microsoft.Xna.Framework.Graphics
                 // Z value, then scale and offset according to the fog start/end distances.
                 // Because we only care about the Z component, the shader can do all this
                 // with a single dot product, using only the Z row of the world+view matrix.
-                
+
                 float scale = 1f / (fogStart - fogEnd);
 
                 Vector4 fogVector = new Vector4();
@@ -146,30 +148,30 @@ namespace Microsoft.Xna.Framework.Graphics
         /// Lazily recomputes the world inverse transpose matrix and
         /// eye position based on the current effect parameter settings.
         /// </summary>
-        internal static EffectDirtyFlags SetLightingMatrices(EffectDirtyFlags dirtyFlags, ref Matrix world, ref Matrix view,
+        internal static EffectDirtyFlags SetLightingMatrices(EffectDirtyFlags dirtyFlags, ref Matrix4x4 world, ref Matrix4x4 view,
                                                              EffectParameter worldParam, EffectParameter worldInverseTransposeParam, EffectParameter eyePositionParam)
         {
             // Set the world and world inverse transpose matrices.
             if ((dirtyFlags & EffectDirtyFlags.World) != 0)
             {
-                Matrix worldTranspose;
-                Matrix worldInverseTranspose;
-                
-                Matrix.Invert(ref world, out worldTranspose);
-                Matrix.Transpose(ref worldTranspose, out worldInverseTranspose);
-                
+                Matrix4x4 worldTranspose;
+                Matrix4x4 worldInverseTranspose;
+
+                Matrix4x4.Invert(world, out worldTranspose);
+                worldInverseTranspose = Matrix4x4.Transpose(worldTranspose);
+
                 worldParam.SetValue(world);
                 worldInverseTransposeParam.SetValue(worldInverseTranspose);
-                
+
                 dirtyFlags &= ~EffectDirtyFlags.World;
             }
 
             // Set the eye position.
             if ((dirtyFlags & EffectDirtyFlags.EyePosition) != 0)
             {
-                Matrix viewInverse;
-                
-                Matrix.Invert(ref view, out viewInverse);
+                Matrix4x4 viewInverse;
+
+                Matrix4x4.Invert(view, out viewInverse);
 
                 eyePositionParam.SetValue(viewInverse.Translation);
 
@@ -207,12 +209,12 @@ namespace Microsoft.Xna.Framework.Graphics
             //
             // For futher optimization goodness, we merge material alpha with the diffuse
             // color parameter, and premultiply all color values by this alpha.
-            
+
             if (lightingEnabled)
             {
                 Vector4 diffuse = new Vector4();
                 Vector3 emissive = new Vector3();
-                
+
                 diffuse.X = diffuseColor.X * alpha;
                 diffuse.Y = diffuseColor.Y * alpha;
                 diffuse.Z = diffuseColor.Z * alpha;
@@ -228,7 +230,7 @@ namespace Microsoft.Xna.Framework.Graphics
             else
             {
                 Vector4 diffuse = new Vector4();
-                
+
                 diffuse.X = (diffuseColor.X + emissiveColor.X) * alpha;
                 diffuse.Y = (diffuseColor.Y + emissiveColor.Y) * alpha;
                 diffuse.Z = (diffuseColor.Z + emissiveColor.Z) * alpha;

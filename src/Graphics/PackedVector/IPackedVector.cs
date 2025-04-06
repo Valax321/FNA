@@ -7,6 +7,8 @@
  */
 #endregion
 
+using System.Numerics;
+
 namespace Microsoft.Xna.Framework.Graphics.PackedVector
 {
 	// http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.graphics.packedvector.ipackedvector.aspx
@@ -16,7 +18,7 @@ namespace Microsoft.Xna.Framework.Graphics.PackedVector
 
 		Vector4 ToVector4();
 	}
-	
+
 	// PackedVector Generic interface
 	// http://msdn.microsoft.com/en-us/library/bb197661.aspx
 	public interface IPackedVector<TPacked> : IPackedVector

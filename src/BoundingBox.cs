@@ -16,7 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-
+using System.Numerics;
 using Microsoft.Xna.Framework.Design;
 #endregion
 
@@ -34,8 +34,8 @@ namespace Microsoft.Xna.Framework
 			get
 			{
 				return string.Concat(
-					"Min( ", Min.DebugDisplayString, " ) \r\n",
-					"Max( ", Max.DebugDisplayString, " )"
+					"Min( ", Min.ToString(), " ) \r\n",
+					"Max( ", Max.ToString(), " )"
 				);
 			}
 		}

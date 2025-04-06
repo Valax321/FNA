@@ -10,6 +10,8 @@
 #region Using Statements
 using System;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
+
 #endregion
 
 namespace Microsoft.Xna.Framework.Design
@@ -63,6 +65,7 @@ namespace Microsoft.Xna.Framework.Design
 			return true;
 		}
 
+		[RequiresUnreferencedCode("Base class requirement")]
 		public override PropertyDescriptorCollection GetProperties(
 			ITypeDescriptorContext context,
 			Object value,
