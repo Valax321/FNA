@@ -10,6 +10,8 @@
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<LangVersion>9</LangVersion>
 		<IncludeLegacyContentPipeline>false</IncludeLegacyContentPipeline>
+		<IsTrimmable>true</IsTrimmable>
+		<IsAOTCompatible>true</IsAOTCompatible>
 	</PropertyGroup>
 	<PropertyGroup>
 		<FNASettingsPropsFilePath>$(SolutionDir)FNA.Settings.props</FNASettingsPropsFilePath>

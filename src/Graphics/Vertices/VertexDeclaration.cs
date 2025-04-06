@@ -9,6 +9,7 @@
 
 #region Using Statements
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 #endregion
 
@@ -100,7 +101,7 @@ namespace Microsoft.Xna.Framework.Graphics
 		/// Prefer to use VertexDeclarationCache when the declaration lookup
 		/// can be performed with a templated type.
 		/// </remarks>
-		internal static VertexDeclaration FromType(Type vertexType)
+		internal static VertexDeclaration FromType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type vertexType)
 		{
 			if (vertexType == null)
 			{
