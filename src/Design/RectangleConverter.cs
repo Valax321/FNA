@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
  * Copyright 2009-2024 Ethan Lee and the MonoGame Team
  *
@@ -11,6 +11,7 @@
 using System;
 using System.Collections;
 using System.ComponentModel;
+using System.Drawing;
 using System.Globalization;
 #endregion
 

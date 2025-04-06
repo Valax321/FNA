@@ -12,6 +12,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -572,7 +573,7 @@ namespace Microsoft.Xna.Framework
 
 		public static Rectangle GetWindowBounds(IntPtr window)
 		{
-			Rectangle result;
+			Rectangle result = new Rectangle();
 			if ((SDL.SDL_GetWindowFlags(window) & SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) != 0)
 			{
 				/* It's easier/safer to just use the display mode here */
@@ -588,14 +589,19 @@ namespace Microsoft.Xna.Framework
 			{
 				SDL.SDL_GetWindowPosition(
 					window,
-					out result.X,
-					out result.Y
+					out var x,
+					out var y
 				);
 				SDL.SDL_GetWindowSize(
 					window,
-					out result.Width,
-					out result.Height
+					out var w,
+					out var h
 				);
+
+				result.X = x;
+				result.X = y;
+				result.Width = w;
+				result.Height = h;
 			}
 			return result;
 		}
