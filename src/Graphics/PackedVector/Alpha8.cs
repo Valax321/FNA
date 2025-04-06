@@ -9,12 +9,14 @@
 
 #region Using Statements
 using System;
+using System.Numerics;
+
 #endregion
 
 namespace Microsoft.Xna.Framework.Graphics.PackedVector
 {
 	/// <summary>
-	/// Packed vector type containing unsigned normalized values ranging from 0 to 1. 
+	/// Packed vector type containing unsigned normalized values ranging from 0 to 1.
 	/// The x and z components use 5 bits, and the y component uses 6 bits.
 	/// </summary>
 	public struct Alpha8 : IPackedVector<byte>, IEquatable<Alpha8>, IPackedVector

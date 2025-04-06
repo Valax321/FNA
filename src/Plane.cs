@@ -15,7 +15,7 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-
+using System.Numerics;
 using Microsoft.Xna.Framework.Design;
 #endregion
 
@@ -33,7 +33,7 @@ namespace Microsoft.Xna.Framework
 			get
 			{
 				return string.Concat(
-					Normal.DebugDisplayString, " ",
+					Normal.ToString(), " ",
 					D.ToString()
 				);
 			}
@@ -67,7 +67,7 @@ namespace Microsoft.Xna.Framework
 			Vector3 ac = c - a;
 
 			Vector3 cross = Vector3.Cross(ab, ac);
-			Vector3.Normalize(ref cross, out Normal);
+			Normal = Vector3.Normalize(cross);
 			D = -(Vector3.Dot(Normal, a));
 		}
 
@@ -143,7 +143,7 @@ namespace Microsoft.Xna.Framework
 		{
 			float length = Normal.Length();
 			float factor = 1.0f / length;
-			Vector3.Multiply(ref Normal, factor, out Normal);
+			Normal = Vector3.Multiply(Normal, factor);
 			D = D * factor;
 		}
 
@@ -206,7 +206,7 @@ namespace Microsoft.Xna.Framework
 		{
 			float length = value.Normal.Length();
 			float factor = 1.0f / length;
-			Vector3.Multiply(ref value.Normal, factor, out result.Normal);
+			result.Normal = Vector3.Multiply(value.Normal, factor);
 			result.D = value.D * factor;
 		}
 
@@ -216,7 +216,7 @@ namespace Microsoft.Xna.Framework
 		/// <param name="plane">The normalized plane to transform.</param>
 		/// <param name="matrix">The transformation matrix.</param>
 		/// <returns>The transformed plane.</returns>
-		public static Plane Transform(Plane plane, Matrix matrix)
+		public static Plane Transform(Plane plane, Matrix4x4 matrix)
 		{
 			Plane result;
 			Transform(ref plane, ref matrix, out result);
@@ -231,25 +231,23 @@ namespace Microsoft.Xna.Framework
 		/// <param name="result">The transformed plane.</param>
 		public static void Transform(
 			ref Plane plane,
-			ref Matrix matrix,
+			ref Matrix4x4 matrix,
 			out Plane result
 		) {
 			/* See "Transforming Normals" in
 			 * http://www.glprogramming.com/red/appendixf.html
 			 * for an explanation of how this works.
 			 */
-			Matrix transformedMatrix;
-			Matrix.Invert(ref matrix, out transformedMatrix);
-			Matrix.Transpose(
-				ref transformedMatrix,
-				out transformedMatrix
+			Matrix4x4 transformedMatrix;
+			Matrix4x4.Invert(matrix, out transformedMatrix);
+			transformedMatrix = Matrix4x4.Transpose(
+				transformedMatrix
 			);
 			Vector4 vector = new Vector4(plane.Normal, plane.D);
 			Vector4 transformedVector;
-			Vector4.Transform(
-				ref vector,
-				ref transformedMatrix,
-				out transformedVector
+			transformedVector = Vector4.Transform(
+				vector,
+				transformedMatrix
 			);
 			result = new Plane(transformedVector);
 		}
@@ -278,10 +276,9 @@ namespace Microsoft.Xna.Framework
 			ref Quaternion rotation,
 			out Plane result
 		) {
-			Vector3.Transform(
-				ref plane.Normal,
-				ref rotation,
-				out result.Normal
+			result.Normal = Vector3.Transform(
+				plane.Normal,
+				rotation
 			);
 			result.D = plane.D;
 		}

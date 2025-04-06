@@ -239,6 +239,7 @@
 		<Compile Include="src\IUpdateable.cs" />
 		<Compile Include="src\LaunchParameters.cs" />
 		<Compile Include="src\MathHelper.cs" />
+		<Compile Include="src\NaNCheckExtensions.cs" />
 		<Compile Include="src\Media\MediaPlayer.cs" />
 		<Compile Include="src\Media\MediaQueue.cs" />
 		<Compile Include="src\Media\MediaState.cs" />

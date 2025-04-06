@@ -14,6 +14,7 @@
 #region Using Statements
 using System;
 using System.Diagnostics;
+using System.Numerics;
 using System.Text;
 #endregion
 
@@ -30,7 +31,7 @@ namespace Microsoft.Xna.Framework
 		/// <summary>
 		/// Gets or sets the <see cref="Matrix"/> of the frustum.
 		/// </summary>
-		public Matrix Matrix
+		public Matrix4x4 Matrix
 		{
 			get
 			{
@@ -145,7 +146,7 @@ namespace Microsoft.Xna.Framework
 
 		#region Private Fields
 
-		private Matrix matrix;
+		private Matrix4x4 matrix;
 		private readonly Vector3[] corners = new Vector3[CornerCount];
 		private readonly Plane[] planes = new Plane[PlaneCount];
 
@@ -162,7 +163,7 @@ namespace Microsoft.Xna.Framework
 		/// Constructs the frustum by extracting the view planes from a matrix.
 		/// </summary>
 		/// <param name="value">Combined matrix which usually is (View * Projection).</param>
-		public BoundingFrustum(Matrix value)
+		public BoundingFrustum(Matrix4x4 value)
 		{
 			this.matrix = value;
 			this.CreatePlanes();
@@ -607,24 +608,24 @@ namespace Microsoft.Xna.Framework
 			Vector3 v1, v2, v3;
 			Vector3 cross;
 
-			Vector3.Cross(ref b.Normal, ref c.Normal, out cross);
+			cross = Vector3.Cross(b.Normal, c.Normal);
 
 			float f;
-			Vector3.Dot(ref a.Normal, ref cross, out f);
+			f = Vector3.Dot(a.Normal, cross);
 			f *= -1.0f;
 
-			Vector3.Cross(ref b.Normal, ref c.Normal, out cross);
-			Vector3.Multiply(ref cross, a.D, out v1);
+			cross = Vector3.Cross(b.Normal, c.Normal);
+			v1 = Vector3.Multiply(cross, a.D);
 			// v1 = (a.D * (Vector3.Cross(b.Normal, c.Normal)));
 
 
-			Vector3.Cross(ref c.Normal, ref a.Normal, out cross);
-			Vector3.Multiply(ref cross, b.D, out v2);
+			cross = Vector3.Cross(c.Normal, a.Normal);
+			v2 = Vector3.Multiply(cross, b.D);
 			// v2 = (b.D * (Vector3.Cross(c.Normal, a.Normal)));
 
 
-			Vector3.Cross(ref a.Normal, ref b.Normal, out cross);
-			Vector3.Multiply(ref cross, c.D, out v3);
+			cross = Vector3.Cross(a.Normal, b.Normal);
+			v3 = Vector3.Multiply(cross, c.D);
 			// v3 = (c.D * (Vector3.Cross(a.Normal, b.Normal)));
 
 			result.X = (v1.X + v2.X + v3.X) / f;
