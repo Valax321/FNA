@@ -191,6 +191,12 @@ namespace Microsoft.Xna.Framework
 				);
 			}
 
+			SDL.SDL_SetAppMetadata(ApplicationInfo.Product, ApplicationInfo.VersionString,
+				ApplicationInfo.AppIdentifier);
+			SDL.SDL_SetAppMetadataProperty(SDL.SDL_PROP_APP_METADATA_COPYRIGHT_STRING, ApplicationInfo.Copyright);
+			SDL.SDL_SetAppMetadataProperty(SDL.SDL_PROP_APP_METADATA_CREATOR_STRING, ApplicationInfo.Company);
+			SDL.SDL_SetAppMetadataProperty(SDL.SDL_PROP_APP_METADATA_TYPE_STRING, "game");
+
 			// This _should_ be the first real SDL call we make...
 			if (!SDL.SDL_Init(
 				SDL.SDL_InitFlags.SDL_INIT_VIDEO |
