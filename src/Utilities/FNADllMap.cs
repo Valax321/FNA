@@ -225,6 +225,9 @@ namespace Microsoft.Xna.Framework
 				mapDictionary.Add(oldLib, newLib);
 			}
 
+			// This is where dotnet puts native libs from nuget by default
+			searchPaths.Add(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "runtimes", GetRidForPlatform(), "native"));
+
 			if (Environment.GetEnvironmentVariable("FNA_USE_DLLMAP_SEARCH_PATHS")?.Equals("1") ?? false)
 			{
 				foreach (XmlNode node in xmlDoc.GetElementsByTagName("searchpath"))
